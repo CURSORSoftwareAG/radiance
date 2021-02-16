@@ -323,7 +323,7 @@ public class SubstanceRootPaneUI extends BasicRootPaneUI {
                 this.titlePane.addMouseMotionListener(this.substanceTitleMouseInputListener);
                 this.titlePane.addMouseListener(this.substanceTitleMouseInputListener);
             }
-            this.setMaximized();
+            // this.setMaximized();
         }
     }
 
@@ -464,7 +464,7 @@ public class SubstanceRootPaneUI extends BasicRootPaneUI {
                                 if (bounds.contains(midLoc)) {
                                     if (gc != currentRootPaneGC) {
                                         currentRootPaneGC = gc;
-                                        setMaximized();
+                                        // setMaximized();
                                     }
                                     break;
                                 }
@@ -673,30 +673,30 @@ public class SubstanceRootPaneUI extends BasicRootPaneUI {
         this.titlePane = titlePane;
     }
 
-    /**
-     * Sets maximized bounds according to the display screen insets.
-     */
-    public void setMaximized() {
-        Component tla = this.root.getTopLevelAncestor();
-        // fix for defect 213 - maximizing frame under multiple
-        // screens shouldn't always use insets of the primary
-        // screen.
-        GraphicsConfiguration gc = (currentRootPaneGC != null) ? currentRootPaneGC
-                : tla.getGraphicsConfiguration();
-        Rectangle screenBounds = gc.getBounds();
-        screenBounds.x = 0;
-        screenBounds.y = 0;
-        Insets screenInsets = Toolkit.getDefaultToolkit().getScreenInsets(gc);
-        Rectangle maxBounds = new Rectangle((screenBounds.x + screenInsets.left),
-                (screenBounds.y + screenInsets.top),
-                screenBounds.width - ((screenInsets.left + screenInsets.right)),
-                screenBounds.height - ((screenInsets.top + screenInsets.bottom)));
-        if (tla instanceof JFrame)
-            ((JFrame) tla).setMaximizedBounds(maxBounds);
-        if (MemoryAnalyzer.isRunning()) {
-            MemoryAnalyzer.enqueueUsage("Frame set to bounds " + maxBounds);
-        }
-    }
+    // /**
+    //  * Sets maximized bounds according to the display screen insets.
+    //  */
+    // public void setMaximized() {
+    //     Component tla = this.root.getTopLevelAncestor();
+    //     // fix for defect 213 - maximizing frame under multiple
+    //     // screens shouldn't always use insets of the primary
+    //     // screen.
+    //     GraphicsConfiguration gc = (currentRootPaneGC != null) ? currentRootPaneGC
+    //             : tla.getGraphicsConfiguration();
+    //     Rectangle screenBounds = gc.getBounds();
+    //     screenBounds.x = 0;
+    //     screenBounds.y = 0;
+    //     Insets screenInsets = Toolkit.getDefaultToolkit().getScreenInsets(gc);
+    //     Rectangle maxBounds = new Rectangle((screenBounds.x + screenInsets.left),
+    //             (screenBounds.y + screenInsets.top),
+    //             screenBounds.width - ((screenInsets.left + screenInsets.right)),
+    //             screenBounds.height - ((screenInsets.top + screenInsets.bottom)));
+    //     if (tla instanceof JFrame)
+    //         ((JFrame) tla).setMaximizedBounds(maxBounds);
+    //     if (MemoryAnalyzer.isRunning()) {
+    //         MemoryAnalyzer.enqueueUsage("Frame set to bounds " + maxBounds);
+    //     }
+    // }
 
     /**
      * Returns the <code>JComponent</code> rendering the title pane. If this returns null, it
@@ -1356,10 +1356,10 @@ public class SubstanceRootPaneUI extends BasicRootPaneUI {
                         && ((ev.getModifiers() & InputEvent.BUTTON1_MASK) != 0)) {
                     if (f.isResizable()) {
                         if ((state & Frame.MAXIMIZED_BOTH) != 0) {
-                            setMaximized();
+                            // setMaximized();
                             f.setExtendedState(state & ~Frame.MAXIMIZED_BOTH);
                         } else {
-                            setMaximized();
+                            // setMaximized();
                             f.setExtendedState(state | Frame.MAXIMIZED_BOTH);
                         }
                         return;
@@ -1528,10 +1528,11 @@ public class SubstanceRootPaneUI extends BasicRootPaneUI {
                         && ((ev.getModifiers() & InputEvent.BUTTON1_MASK) != 0)) {
                     if (f.isResizable()) {
                         if ((state & Frame.MAXIMIZED_BOTH) != 0) {
-                            setMaximized();
+                            // setMaximized();
                             f.setExtendedState(state & ~Frame.MAXIMIZED_BOTH);
                         } else {
-                            setMaximized();
+                            // setMaximized();
+                            ((SubstanceTitlePane) SubstanceRootPaneUI.this.titlePane).updateMaximizedBounds();
                             f.setExtendedState(state | Frame.MAXIMIZED_BOTH);
                         }
                         return;

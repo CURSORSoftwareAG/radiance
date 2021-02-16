@@ -52,6 +52,7 @@ import javax.swing.plaf.UIResource;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Rectangle2D;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -1113,6 +1114,7 @@ public class SubstanceTitlePane extends JComponent {
                                     DecorationAreaType.PRIMARY_TITLE_PANE)));
         }
 
+		@Override
         public void actionPerformed(ActionEvent e) {
             if (window != null) {
                 window.dispatchEvent(new WindowEvent(window, WindowEvent.WINDOW_CLOSING));
@@ -1136,6 +1138,7 @@ public class SubstanceTitlePane extends JComponent {
                                     DecorationAreaType.PRIMARY_TITLE_PANE)));
         }
 
+		@Override
         public void actionPerformed(ActionEvent e) {
             Frame frame = SubstanceTitlePane.this.getFrame();
             if (frame != null) {
@@ -1160,6 +1163,7 @@ public class SubstanceTitlePane extends JComponent {
                                     DecorationAreaType.PRIMARY_TITLE_PANE)));
         }
 
+		@Override
         public void actionPerformed(ActionEvent e) {
             Frame frame = SubstanceTitlePane.this.getFrame();
 
@@ -1191,18 +1195,90 @@ public class SubstanceTitlePane extends JComponent {
                                     .getEnabledColorScheme(DecorationAreaType.PRIMARY_TITLE_PANE)));
         }
 
+		@Override
         public void actionPerformed(ActionEvent e) {
             Frame frame = SubstanceTitlePane.this.getFrame();
             if (frame != null) {
-                if (frame instanceof JFrame) {
-                    SubstanceRootPaneUI rpUI = (SubstanceRootPaneUI) ((JFrame) frame).getRootPane()
-                            .getUI();
-                    rpUI.setMaximized();
-                }
+
+                updateMaximizedBounds();
+
                 frame.setExtendedState(SubstanceTitlePane.this.state | Frame.MAXIMIZED_BOTH);
             }
         }
     }
+
+        public void updateMaximizedBounds() {
+		    Frame frame = (Frame) window;
+
+		// set maximized bounds to avoid that maximized window overlaps Windows task bar
+		// (if not running in JBR and if not modified from the application)
+		    Rectangle oldMaximizedBounds = frame.getMaximizedBounds();
+		// if(oldMaximizedBounds == null)// ||
+			//  Objects.equals( oldMaximizedBounds, rootPane.getClientProperty( "_flatlaf.maximizedBounds" ) )) )
+		// {
+			GraphicsConfiguration gc = window.getGraphicsConfiguration();
+
+			// Screen bounds, which may be smaller than physical size on Java 9+.
+			// E.g. if running a 3840x2160 screen at 200%, screenBounds.size is 1920x1080.
+			// In Java 9+, each screen can have its own scale factor.
+			//
+			// On Java 8, which does not scale, screenBounds.size of the primary screen
+			// is identical to its physical size. But when the primary screen is scaled,
+			// then screenBounds.size of secondary screens is scaled with the scale factor
+			// of the primary screen.
+			// E.g. primary 3840x2160 screen at 150%, secondary 1920x1080 screen at 100%,
+			// then screenBounds.size is 3840x2160 on primary and 2880x1560 on secondary.
+			Rectangle screenBounds = gc.getBounds();
+            // System.err.println("screenBounds: " + screenBounds);
+			int maximizedX = screenBounds.x;
+			int maximizedY = screenBounds.y;
+			int maximizedWidth = screenBounds.width;
+			int maximizedHeight = screenBounds.height;
+
+            java.lang.Runtime.Version version = Runtime.version();
+            // System.err.println("Java Version = "+version);
+            // System.err.println("Java Version Feature Element = "+version.feature());
+            // System.err.println("Java Version Interim Element = "+version.interim());
+            // System.err.println("Java Patch Element Version = "+version.patch());
+            // System.err.println("Java Update Element Version = "+version.update());
+            int feature = version.feature();
+            int patch = version.patch();
+            int update = version.update();
+			if((feature == 11 && patch == 0 && update < 8) || (feature < 11)) {
+			    // on Java 8 to 14, maximized x,y are 0,0 based on all screens in a multi-screen environment
+				maximizedX = 0;
+			    maximizedY = 0;
+			    // scale maximized screen size to get physical screen size for Java 9 to 14
+				AffineTransform defaultTransform = gc.getDefaultTransform();
+				maximizedWidth = (int) (maximizedWidth * defaultTransform.getScaleX());
+				maximizedHeight = (int) (maximizedHeight * defaultTransform.getScaleY());
+			}
+
+			// screen insets are in physical size, except for Java 15+
+			// (see https://bugs.openjdk.java.net/browse/JDK-8243925)
+			// and except for Java 8 on secondary screens where primary screen is scaled
+			Insets screenInsets = window.getToolkit().getScreenInsets( gc );
+            // System.err.println("screeninsets: " + screenInsets);
+			// maximized bounds are required in physical size, except for Java 15+
+			// (see https://bugs.openjdk.java.net/browse/JDK-8231564 and
+			//      https://bugs.openjdk.java.net/browse/JDK-8176359)
+			// and except for Java 8 on secondary screens where primary screen is scaled
+			Rectangle newMaximizedBounds = new Rectangle(
+				maximizedX + screenInsets.left,
+				maximizedY + screenInsets.top,
+				maximizedWidth - screenInsets.left - screenInsets.right,
+				maximizedHeight - screenInsets.top - screenInsets.bottom );
+            // System.err.println("new maxBounds: " + newMaximizedBounds);
+			if( !Objects.equals( oldMaximizedBounds, newMaximizedBounds ) ) {
+			// change maximized bounds
+				frame.setMaximizedBounds( newMaximizedBounds );
+
+				// remember maximized bounds in client property to be able to detect
+				// whether maximized bounds are modified from the application
+				// rootPane.putClientProperty( "_flatlaf.maximizedBounds", newMaximizedBounds );
+			}
+		// }
+	    }
 
     /**
      * Class responsible for drawing the system menu. Looks up the image to draw from the Frame
@@ -1403,6 +1479,7 @@ public class SubstanceTitlePane extends JComponent {
      * the Window changes.
      */
     private class PropertyChangeHandler implements PropertyChangeListener {
+		@Override
         public void propertyChange(PropertyChangeEvent pce) {
             String name = pce.getPropertyName();
 
